@@ -22,7 +22,7 @@ namespace LiveSplit.KTANE {
         private static string BestTimes = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "Low", @"Steel Crate Games\Keep Talking and Nobody Explodes\best_times.xml");
         private static string LogFile = null;
         private int currentSplit = 0;
-        private decimal bestTime;
+        private decimal bestTimeRTA, bestTime;
         private DateTime startOfBomb, endOfBomb;
         private List<LogLine> logLines = new List<LogLine>();
         private long lastPosition = 0;
@@ -32,20 +32,6 @@ namespace LiveSplit.KTANE {
             textInfo = new InfoTextComponent("Best Time", "");
             textInfo.LongestString = "Best Time 123.456 / 123.456";
             textInfo.InformationName = "Best Time";
-        }
-
-        public static void Main(string[] args) {
-            Process[] ktanes = Process.GetProcessesByName("ktane");
-            if (ktanes.Length > 0) {
-                LogFile = Path.Combine(Path.GetDirectoryName(ktanes[0].MainModule.FileName), @"logs\ktane.log");
-            }
-            using (FileStream fs = File.Open(LogFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-                long currentLength = fs.Length;
-                byte[] data = new byte[currentLength];
-                fs.Read(data, 0, data.Length);
-                string mytext = Encoding.UTF8.GetString(data);
-                Console.WriteLine(mytext);
-            }
         }
 
         private void GetValues(IInvalidator invalidator, LiveSplitState lvstate, float width, float height, LayoutMode mode) {
@@ -84,16 +70,20 @@ namespace LiveSplit.KTANE {
                             Model.Split();
                         }
                         endOfBomb = line.Time;
-                    } else if (line.Message.IndexOf("[BombGenerator] Generating bomb with seed") >= 0) {
+                    } else if (line.Message.IndexOf("[BombGenerator] Generator settings: Time: ") >= 0) {
+                        int index = line.Message.IndexOf("Time: ") + 6;
+                        bestTime = decimal.Parse(line.Message.Substring(index, line.Message.IndexOf(",", index) - index));
+                    } else if (line.Message.IndexOf("[BombGenerator] Generating Widgets") >= 0) {
                         startOfBomb = line.Time;
                         endOfBomb = DateTime.MinValue;
 
                         XDocument x = XDocument.Load(BestTimes);
                         var xmlList = x.Descendants("dictionary").Elements().ToList();
                         if (xmlList.Count >= currentSplit) {
-                            bestTime = decimal.Parse(xmlList[currentSplit - 1].Element("value").Element("GameRecord").Element("RealTimeElapsed").Value);
+                            bestTimeRTA = decimal.Parse(xmlList[currentSplit - 1].Element("value").Element("GameRecord").Element("RealTimeElapsed").Value);
+                            bestTime -= decimal.Parse(xmlList[currentSplit - 1].Element("value").Element("GameRecord").Element("TimeElapsed").Value);
                         } else {
-                            bestTime = 0;
+                            bestTimeRTA = 0;
                         }
                     } else if (line.Message.IndexOf("[Bomb] Boom") >= 0) {
                         startOfBomb = DateTime.MinValue;
@@ -102,7 +92,9 @@ namespace LiveSplit.KTANE {
                 }
             }
 
-            textInfo.InformationValue = (startOfBomb > DateTime.MinValue ? ((endOfBomb > DateTime.MinValue ? endOfBomb : DateTime.Now) - startOfBomb).TotalSeconds.ToString("0.000") : "0.000") + " / " + bestTime.ToString("0.000");
+            //textInfo.InformationName = "Best Time" + (bestTime > 0 ? " (" + TimeSpan.FromSeconds((double)bestTime).ToString(@"m\:") + (bestTime % 60).ToString("00.000") + ")" : "");
+            textInfo.InformationName = "Best Time";
+            textInfo.InformationValue = (startOfBomb > DateTime.MinValue ? ((endOfBomb > DateTime.MinValue ? endOfBomb : DateTime.Now) - startOfBomb).TotalSeconds.ToString("0.000") : "0.000") + " / " + bestTimeRTA.ToString("0.000");
             textInfo.Update(invalidator, lvstate, width, height, mode);
             if (invalidator != null) {
                 invalidator.Invalidate(0, 0, width, height);
@@ -121,8 +113,7 @@ namespace LiveSplit.KTANE {
                 }
 
                 lastPosition = GenerateData(text, lastPosition);
-            } catch (Exception ex) {
-                WriteLog(ex.ToString());
+            } catch {
             }
         }
         private string GetText(FileStream fs, long position) {
@@ -171,36 +162,26 @@ namespace LiveSplit.KTANE {
             currentSplit = 0;
             startOfBomb = DateTime.MinValue;
             endOfBomb = DateTime.MinValue;
+            bestTimeRTA = 0;
             bestTime = 0;
-            WriteLog("---------Reset----------------------------------");
         }
         public void OnResume(object sender, EventArgs e) {
-            WriteLog("---------Resumed--------------------------------");
         }
         public void OnPause(object sender, EventArgs e) {
-            WriteLog("---------Paused---------------------------------");
         }
         public void OnStart(object sender, EventArgs e) {
             currentSplit++;
-            WriteLog("---------New Game-------------------------------");
         }
         public void OnUndoSplit(object sender, EventArgs e) {
             currentSplit--;
+            bestTimeRTA = 0;
             bestTime = 0;
-            WriteLog(DateTime.Now.ToString(@"HH\:mm\:ss.fff") + " | " + Model.CurrentState.CurrentTime.RealTime.Value.ToString("G").Substring(3, 11) + ": CurrentSplit: " + currentSplit.ToString().PadLeft(24, ' '));
         }
         public void OnSkipSplit(object sender, EventArgs e) {
             currentSplit++;
-            WriteLog(DateTime.Now.ToString(@"HH\:mm\:ss.fff") + " | " + Model.CurrentState.CurrentTime.RealTime.Value.ToString("G").Substring(3, 11) + ": CurrentSplit: " + currentSplit.ToString().PadLeft(24, ' '));
         }
         public void OnSplit(object sender, EventArgs e) {
             currentSplit++;
-            WriteLog(DateTime.Now.ToString(@"HH\:mm\:ss.fff") + " | " + Model.CurrentState.CurrentTime.RealTime.Value.ToString("G").Substring(3, 11) + ": CurrentSplit: " + currentSplit.ToString().PadLeft(24, ' '));
-        }
-        private void WriteLog(string data) {
-            //using (StreamWriter wr = new StreamWriter("_APixelStory.log", true)) {
-            //    wr.WriteLine(data);
-            //}
         }
 
         public Control GetSettingsControl(LayoutMode mode) { return null; }
