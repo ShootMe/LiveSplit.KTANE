@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ProgressionData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <MissionProgression>
+    <item>
+      <key>
+        <string>gameoverviewtutorial</string>
+      </key>
+      <value>
+        <boolean>true</boolean>
+      </value>
+    </item>
+    <item>
+      <key>
+        <string>controlstutorial</string>
+      </key>
+      <value>
+        <boolean>true</boolean>
+      </value>
+    </item>
+  </MissionProgression>
+  <LastUnlockedBombClass>1</LastUnlockedBombClass>
+  <HasWatchedGameOverview>true</HasWatchedGameOverview>
+  <HasCompletedControlsTutorial>true</HasCompletedControlsTutorial>
+  <HasStartedAGame>true</HasStartedAGame>
+  <DisarmedComponentTypes>
+    <ComponentTypeEnum>Wires</ComponentTypeEnum>
+    <ComponentTypeEnum>Keypad</ComponentTypeEnum>
+    <ComponentTypeEnum>BigButton</ComponentTypeEnum>
+    <ComponentTypeEnum>Maze</ComponentTypeEnum>
+    <ComponentTypeEnum>Memory</ComponentTypeEnum>
+    <ComponentTypeEnum>Simon</ComponentTypeEnum>
+    <ComponentTypeEnum>WhosOnFirst</ComponentTypeEnum>
+    <ComponentTypeEnum>Password</ComponentTypeEnum>
+    <ComponentTypeEnum>Venn</ComponentTypeEnum>
+    <ComponentTypeEnum>WireSequence</ComponentTypeEnum>
+    <ComponentTypeEnum>Morse</ComponentTypeEnum>
+    <ComponentTypeEnum>NeedyKnob</ComponentTypeEnum>
+  </DisarmedComponentTypes>
+</ProgressionData>

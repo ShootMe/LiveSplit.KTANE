@@ -3,14 +3,11 @@ using LiveSplit.UI;
 using LiveSplit.UI.Components;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Linq;
@@ -20,6 +17,7 @@ namespace LiveSplit.KTANE {
         protected TimerModel Model { get; set; }
         public IDictionary<string, Action> ContextMenuControls { get { return null; } }
         private static string BestTimes = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "Low", @"Steel Crate Games\Keep Talking and Nobody Explodes\best_times.xml");
+        private static string Progression = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "Low", @"Steel Crate Games\Keep Talking and Nobody Explodes\progression.xml");
         private static string LogFile = null;
         private int currentSplit = 0;
         private decimal bestTimeRTA, bestTime;
@@ -27,6 +25,7 @@ namespace LiveSplit.KTANE {
         private List<LogLine> logLines = new List<LogLine>();
         private long lastPosition = 0;
         private InfoTextComponent textInfo;
+        private Process KTANE;
 
         public KTANEComponent() {
             textInfo = new InfoTextComponent("Best Time", "");
@@ -34,22 +33,40 @@ namespace LiveSplit.KTANE {
             textInfo.InformationName = "Best Time";
         }
 
-        private void GetValues(IInvalidator invalidator, LiveSplitState lvstate, float width, float height, LayoutMode mode) {
-            if (string.IsNullOrEmpty(LogFile) || !File.Exists(LogFile)) {
+        private bool GetKTANE() {
+            if (KTANE == null || KTANE.HasExited) {
+                if (KTANE != null) {
+                    if (MessageBox.Show("Do you want to reset progression?", "Progression", MessageBoxButtons.YesNo) == DialogResult.Yes) {
+                        File.WriteAllText(Progression, Properties.Resources.progression, Encoding.UTF8);
+                    }
+                    KTANE = null;
+                }
+
                 Process[] ktanes = Process.GetProcessesByName("ktane");
                 if (ktanes.Length > 0) {
-                    LogFile = Path.Combine(Path.GetDirectoryName(ktanes[0].MainModule.FileName), @"logs\ktane.log");
-                } else {
-                    return;
+                    KTANE = ktanes[0];
+                    LogFile = Path.Combine(Path.GetDirectoryName(KTANE.MainModule.FileName), @"logs\ktane.log");
+                    ReadData();
+                    return true;
                 }
             }
+            return KTANE != null;
+        }
 
-            if (currentSplit > 0 && currentSplit < 33 && Model != null && Model.CurrentState != null && Model.CurrentState.CurrentPhase == TimerPhase.Running) {
+        private void GetValues(IInvalidator invalidator, LiveSplitState lvstate, float width, float height, LayoutMode mode) {
+            if (!GetKTANE()) { return; }
+
+            if (Model != null && Model.CurrentState != null) {
                 ReadData();
                 foreach (LogLine line in logLines) {
-                    if (line.Time < DateTime.Now - Model.CurrentState.CurrentTime.RealTime.Value) {
+                    if (Model.CurrentState.CurrentPhase != TimerPhase.Running && line.Message.Equals("[BombGenerator] Generator settings: Time: 300, NumStrikes: 3, FrontFaceOnly: True\r3 Pools:\r[Wires] Count: 1\r[BigButton] Count: 1\r[Keypad] Count: 1")) {
+                        Model.Start();
                         continue;
                     }
+                    if (currentSplit <= 0 || currentSplit >= 33 || Model.CurrentState.CurrentPhase != TimerPhase.Running || line.Time < DateTime.Now - Model.CurrentState.CurrentTime.RealTime.Value) {
+                        continue;
+                    }
+
                     if (line.Message.IndexOf("[Bomb] A winner is you!!") >= 0) {
                         if (Model.CurrentState.Run.Count < 8) {
                             switch (currentSplit) {
@@ -137,7 +154,10 @@ namespace LiveSplit.KTANE {
                             logLines.Add(new LogLine() { Message = message, Time = time });
                         } catch { }
                     }
+                } else if (logLines.Count > 0 && !string.IsNullOrWhiteSpace(line)) {
+                    logLines[logLines.Count - 1].Message = string.Concat(logLines[logLines.Count - 1].Message, "\r", line);
                 }
+
                 lastIndex = index + 1;
                 index = text.IndexOf('\x0A', lastIndex);
             }
