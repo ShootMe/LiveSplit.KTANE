@@ -9,8 +9,8 @@ namespace LiveSplit.KTANE {
         public ComponentCategory Category { get { return ComponentCategory.Control; } }
         public IComponent Create(LiveSplitState state) { return new KTANEComponent(); }
         public string UpdateName { get { return this.ComponentName; } }
-        public string UpdateURL { get { return ""; } }
-        public string XMLURL { get { return ""; } }
+        public string UpdateURL { get { return "https://raw.githubusercontent.com/ShootMe/LiveSplit.KTANE/master/"; } }
+        public string XMLURL { get { return this.UpdateURL + "Release/LiveSplit.KTANE.Updates.xml"; } }
         public Version Version { get { return Assembly.GetExecutingAssembly().GetName().Version; } }
     }
 }

@@ -12,6 +12,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
 [assembly: Guid("d00e8287-0d53-4cdc-beeb-5a0ed19087ee")]
-[assembly: AssemblyVersion("1.1.*")]
-[assembly: AssemblyFileVersion("1.1.*")]
+[assembly: AssemblyVersion("1.3.1")]
+[assembly: AssemblyFileVersion("1.3.1")]
 [assembly: ComponentFactory(typeof(KTANEFactory))]

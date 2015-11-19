@@ -13,6 +13,7 @@ using System.Xml;
 using System.Xml.Linq;
 namespace LiveSplit.KTANE {
     public class KTANEComponent : IComponent {
+        private static List<string> missions = new List<string>() { "firsttime", "somethingoldsomethingnew", "doubleyourmoney", "onestepup", "pickupthepace", "ahiddenmessage", "somethingsdifferent", "giantleap", "fairgame", "pickupthepacetwo", "noroomforerror", "eightminutes", "asmallwrinkle", "payattention", "theknob", "multitasker", "wireseverywhere", "rtfm", "whosonfirst", "fiendish", "pickupthepacethree", "onewitheverything", "pickupthepacefour", "juggler", "doubletrouble", "iamhardcore", "blinkenlights", "appliedtheory", "amazing", "snipsnap", "rainbowtable", "blinkenlightstwo" };
         public string ComponentName { get { return "Keep Talking and Nobody Explodes Autosplitter"; } }
         protected TimerModel Model { get; set; }
         public IDictionary<string, Action> ContextMenuControls { get { return null; } }
@@ -97,8 +98,13 @@ namespace LiveSplit.KTANE {
                         XDocument x = XDocument.Load(BestTimes);
                         var xmlList = x.Descendants("dictionary").Elements().ToList();
                         if (xmlList.Count >= currentSplit) {
-                            bestTimeRTA = decimal.Parse(xmlList[currentSplit - 1].Element("value").Element("GameRecord").Element("RealTimeElapsed").Value);
-                            bestTime -= decimal.Parse(xmlList[currentSplit - 1].Element("value").Element("GameRecord").Element("TimeElapsed").Value);
+                            foreach (XElement ele in xmlList) {
+                                if (ele.Element("key").Element("string").Value == missions[currentSplit - 1]) {
+                                    bestTimeRTA = decimal.Parse(ele.Element("value").Element("GameRecord").Element("RealTimeElapsed").Value);
+                                    bestTime -= decimal.Parse(ele.Element("value").Element("GameRecord").Element("TimeElapsed").Value);
+                                    break;
+                                }
+                            }
                         } else {
                             bestTimeRTA = 0;
                         }
